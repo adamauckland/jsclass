@@ -1,40 +1,85 @@
-/*
+/**
+ * @description Class
  *
- *  The difference between programming and scripting
+ * A class based OO inheritance pattern implementation in Javascript.
+ * Exports a module which works in AMD, NodeJS and CommonJS
  *
- *  one requires a level of understanding of the language, the other simply an understanding of the syntax
+ * Useage
+ * ======
  *
- *  When a programmer says 'I can program in any language' they are still a scripter. They do
- *  not comprehend the nuances which make them a programmer.
+ * Pass an object in with the functions you want all instances of the class to start with.
+ * Modify the class variable to add functions.
+ *
+ * Define a class (type):
+ *
+ * 		var Vehicle = Objects.Class({});
+ *
+ *
+ * 	Instanciation:
+ *
+ * 		var v = new Vehicle();
+ *
+ *
+ * 	Define a class with a constructor:
+ *
+ *		var Vehicle = Objects.Class({
+ *			init: function(manufacturer) {
+ *				this.manufacturer = manufacturer;
+ *			}
+ *		});
+ *
+ *
+ *	Instanciate a class with a constructor:
+ *
+ *		var v = new Vehicle('Big Cars Incorporated');
+ *
+ *
+ *	Define a subclass:
+ *
+ *		var Car = Objects.Class(Vehicle, {});
+ *
+ *
+ *	Define a subclass with a constructor, calling the overridden superclass constructor:
+ *	Note:  __super here is a reference to the Vehicle.init() function.
+ *	Change __super to be something different in the modules.settings.superclassInjector.
+ *
+ *	__super can be positioned anywhere in the arguments list.
+ *
+ *		var Car = Objects.Class(Vehicle, {
+ *			init: function(__super, manufacturer, model) {
+ *				this.model = model;
+ *
+ *				// call the superclass constructor, passing in the parameter.
+ *				__super.init(manufacturer);
+ *			}
+ *		});
+ *
+ *
+ * 	Mixins:
+ *
+ * 		var Trailer = Objects.Class(Vehicle, Car, {});
  *
  */
-
-
-
-
-
-
-
-
-
-
-"use strict";
-
-
-var Class = (function() {
-
-
-
+(function (root, factory) {
+	if (typeof exports === 'object') {
+		module.exports = factory();
+	} else if (typeof define === 'function' && define.amd) {
+		define(factory);
+	} else {
+		root.returnExports = factory();
+	}
+}(this, function () {
+	"use strict";
 	/**
-	 * @description Settings
+	 * @description Settings for module. Not generally user modified
 	 */
 	var settings = {
 		/**
 		 * @description	What to use as a superclass injector in any overriding functions
 		 */
-		superclassInjector: '$super'
+		superclassInjector: '__super'
 	};
-
+	
 
 	/**
 	 * @description Copy the attributes from one object to another
@@ -43,7 +88,6 @@ var Class = (function() {
 	 */
 	function extend(destination, source) {
 		for (var loopItem in source) {
-			console.log('Copying ' + loopItem);
 			destination[loopItem] = source[loopItem];
 		}
 	}
@@ -51,26 +95,27 @@ var Class = (function() {
 
 	/**
 	 * @description Check to see if an object is a function
-	 * @param		testObject	Object
+	 * @param		test Object	Object
 	 * @returns		false or true
 	 */
 	function isFunction(testObject) {
-	  return Object.prototype.toString.call(testObject) === '[object Function]';
+		return Object.prototype.toString.call(testObject) === '[object Function]';
 	}
 
 
 	/**
 	 * @description Examine code for a superclass injector, defined in
-	 * settings.superclassInjector
+	 * 				settings.superclassInjector
 	 *
-	 * @returns -1 if no superclass injector
-	 * 			or the index the injector is in the arguments array
+	 * @returns -1 	if no superclass injector
+	 * 				or the index the injector is in the arguments array
 	 */
 	function hasSuperArgument(itemObject) {
 		var hasSuper = -1,
 			args,
 			argIndex;
 
+		// parse the code and look for the parameters
 		args = /\(([^)]+)/.exec(itemObject.toString());
 
 		if (args === null) {
@@ -81,6 +126,7 @@ var Class = (function() {
 			args = args[1].split(/\s*,\s*/);
 		}
 
+		// look for the superclassInjector item
 		for (argIndex = 0; argIndex < args.length; argIndex++) {
 			if (args[argIndex] === settings.superclassInjector) {
 				hasSuper = argIndex;
@@ -91,98 +137,101 @@ var Class = (function() {
 	}
 
 
+	/**
+	 * @description Temporary object so we can chain prototypes
+	 */
 	function subclass() {
 
 	}
 
 
-	function Mixin(opts) {
-		var superclassPrototype;
+	/**
+	 * @description Extend this class with the opts object, checking for
+	 * 				overrides
+	 * @param		opts	an object of default functions or parameters
+	 */
+	function Extend(opts) {
+		if (typeof opts === 'undefined') {
+			return;
+		}
+		
+		var superclassPrototype,
+			superArgumentIndex,
+			itemObject,
+			itemName;
 
 		if((typeof this.__superclass !== 'undefined') &&
 		   (typeof this.__superclass.prototype !== 'undefined')){
 			superclassPrototype = this.__superclass.prototype;
 		}
 
-		/**
-		 * If we've got some functions in the opts, look for overrides.
-		 *
-		 * The user can use $super to access the superclass methods
-		 */
-		if (typeof opts !== 'undefined') {
-			for(var itemName in opts){
-				var itemObject = opts[itemName],
-				superArgumentIndex = -1;
+		//
+		// If we've got some functions in the opts, look for overrides.
+		//
+		// look for configurable superclass parameter and inject a reference to the
+		// overridden function in place.
+		//
+		for(itemName in opts){
+			itemObject = opts[itemName],
+			superArgumentIndex = -1;
 
-				console.log(itemObject);
+			// check to see if we are overriding a superclass function
+			if ((superclassPrototype) && (isFunction(itemObject) === true)) {
+				superArgumentIndex = hasSuperArgument(itemObject);
 
-				/**
-				 * If we reference a parameter called $super,
-				 * point it to the superclass
-				 */
-				if (
-					(superclassPrototype) &&
-					(isFunction(itemObject) === true)) {
+				if ((typeof superArgumentIndex !== 'undefined') && (superArgumentIndex !== -1)) {
 
-					superArgumentIndex = hasSuperArgument(itemObject);
+					// attach this function as an anonymous function, passing in the superclass
+					// instead of $super
 
-					if ((typeof superArgumentIndex !== 'undefined') && (superArgumentIndex !== -1)) {
+					// create a function to repalce the other one
+					// $scope should be a reference to a function which calls the function
+					// on the ancestor with the name of this property, within our scope
 
-						// attach this function as an anonymous function, passing in the superclass
-						// instead of $super
+					// we want to return a function which calls the function being passed in,
+					// with the $scope parameter as a function to run the method on the ancestor
+					// function
 
-						// create a function to repalce the other one
-						// $scope should be a reference to a function which calls the function
-						// on the ancestor with the name of this property, within our scope
+					var tempCode = itemObject;
 
-						// we want to return a function which calls the function being passed in,
-						// with the $scope parameter as a function to run the method on the ancestor
-						// function
+					itemObject = (function(input, superArgumentIndex) {
+						return function() {
+							var superClassFunction,
+								argumentList,
+								outerScope = this;
 
-						var tempCode = itemObject;
+							// create a reference to run the function from the superclass WITHIN OUR SCOPE
+							superClassFunction = function() {
+								superclassPrototype[input].apply(outerScope, arguments);
+							};
 
-						itemObject = (function(input) {
-							return function() {
-								var $scope,
-									argumentList = [],
-									i, outerScope = this;
+							// Dependency inject the reference
+							argumentList = Array.prototype.slice.call(arguments);
+							argumentList.splice(superArgumentIndex, 0, superClassFunction);
 
-								// set $scope to be a reference to a function which calls
-								// the superclassed function WITHIN OUR SCOPE
-								$scope = function() {
-									superclassPrototype[input].apply(outerScope, arguments);
-								};
-
-								// create a new arguments list
-								argumentList.push($scope);
-								for (i=0; i < arguments.length; i++) {
-									argumentList.push(arguments[i])
-								}
-
-								// now execute the original code, passing in the argument list with $super added on
-								// $super is a reference to the same name function in the superclass
-								tempCode.apply(this, argumentList);
-							}
-						})(itemName);
-					}
+							// now execute the original code, passing in the argument list with
+							// the superclass method injected in
+							tempCode.apply(this, argumentList);
+						}
+					})(itemName, superArgumentIndex);
 				}
-
-				this.prototype[itemName] = itemObject;
 			}
-		}
 
-		// not sure about this
-		return this;
+			this.prototype[itemName] = itemObject;
+		}
 	}
 
 
 	/**
-	 * @description Create a new class with inheritance.
+	 * @description Define a new class with optional inheritance.
 	 *
-	 * @param superclass optional. A class to inherit from
-	 * @param opts optional. An object to initialise the class
+	 * @param 		superclass 	optional. A class to inherit from
+	 * @param 		opts 		optional. An object to initialise the class
+	 *
+	 * 				You can mixin as many objects as you want, but the first one
+	 * 				will always become the superclass
 	 */
-	function Create(superclass, opts) {
+	function Class(superclass, opts) {
 		var argumentsIndex,
 			argumentsItem,
 			argumentsName,
@@ -190,121 +239,87 @@ var Class = (function() {
 			args,
 			hasSuper;
 
-		/**
-		 * Create a factory function for this class.
-		 */
+		//
+		// Create a factory function for this class.
+		//
 		function factory() {
 			this.init.apply(this, arguments);
 		};
 
 
-		/**
-		 * Import basic functionality
-		 */
+		// ensure every class has an Extend method
 		extend(factory, {
-			Mixin: Mixin
+			Extend: Extend
 		});
 
 
+		// support as many mixins as are passed in
 		factory.subclasses = [];
 		for (argumentsIndex = 0; argumentsIndex < arguments.length; argumentsIndex++) {
+			// lowerclass extend simply copies the values without supporting superclass.init() calls
 			extend(factory.prototype, arguments[argumentsIndex]);
 		}
 
 
-		/**
-		 * If we have a superclass, create a new prototype, the same as the
-		 * superclass prototype and reference that
-		 */
+		//
+		// If we have a superclass, create a new prototype, the same as the
+		// superclass prototype and reference that
+		//
 		if (arguments.length > 0) {
 			if (isFunction(superclass)) {
+				// we need to use the superclass when overriding methods
 				factory.__superclass = superclass;
 
+				// use a new prototype object
 				subclass.prototype = superclass.prototype;
 				factory.prototype = new subclass;
+				
+				// give the superclass a reference back to us
 				superclass.subclasses.push(factory);
 			}
 		}
+		
+		
+		//
+		// Import the opts functions, overiding where necessary
+		//
+		factory.Extend(opts);
+		
+		
+		//
+		// If we are implementing an interface, use the interface init to check
+		//
+		if(typeof BaseInterface !== 'undefined') {
+			if(superclass === BaseInterface) {
+				EnforceInterface(factory);
+			}	
+		}
 
-
-		/**
-		 * Import the opts functions, overiding where necessary
-		 */
-		factory.Mixin(opts);
-
-
-		/**
-		 * Add a blank prototype if it doesn't exist
-		 */
+		
+		//
+		// Add a blank prototype if it doesn't exist
+		//
 		if (typeof factory.prototype.init === 'undefined') {
 			factory.prototype.init = function() {
 
 			};
 		}
-
-		/**
-		 * Reset constructor
-		 */
+		
+		
+		//
+		// Reset constructor
+		//
 		factory.prototype.constructor = factory;
 
 		return factory;
 	}
-
+	
+	
+	/**
+	 * @description This is the module which gets exported
+	 */
 	return {
-		Create: Create,
-	};
-})();
-
-
-
-
-
-
-
-
-
-// tests
-console.log('Declare cusotmer');
-var Customer = Class.Create({
-	init: function(name ) {
-		this.name = name;
-		console.log('setting name');
+		Class: Class
 	}
-});
+}));
 
-console.log('Instanciate customer');
-var c = new Customer('customer');
-
-console.log('Declare debt');
-var Debt = Class.Create(Customer, {
-	init: function($super, name, age) {
-		this.age = age;
-		$super(name);
-	}, getAge: function() {
-		return this.age;
-	}
-});
-
-console.log('Instanciate debt');
-var d = new Debt('a', 30);
-console.log('The name is ' + d.name);
-console.log('The age is  ' + d.age);
-
-console.log('d is instance of Debt');
-console.log(d instanceof Debt);
-
-console.log('c is instance of Debt');
-console.log(c instanceof Debt);
-
-console.log('Execute getAge');
-console.log(d.getAge());
-
-console.log('Add a function to Debt');
-Debt.Mixin(
-	{'showAge': function() {
-		return this.age;
-	}
-});
-
-console.log('Run that code');
-console.log(' the new age is ' + d.showAge());
