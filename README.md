@@ -1,12 +1,12 @@
 jsclass
 =======
 
-Class-based OO pattern for JavaScript
+Class-based inheritance for JavaScript
 
 
 @description Class
 
-A class based OO inheritance pattern implementation in Javascript.
+A class based inheritance implementation in Javascript.
 Exports a module which works in AMD, NodeJS and CommonJS
 
 Useage
