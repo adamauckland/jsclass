@@ -39,11 +39,22 @@
  *		var Car = Objects.Class(Vehicle, {});
  *
  *
- *	Define a subclass with a constructor, calling the overridden superclass constructor:
- *	Note:  __super here is a reference to the Vehicle.init() function.
- *	Change __super to be something different in the modules.settings.superclassInjector.
+ *	Define a subclass with a constructor
  *
  *	__super can be positioned anywhere in the arguments list.
+ *
+ *		var Car = Objects.Class(Vehicle, {
+ *			init: function(manufacturer, model) {
+ *				this.model = model;
+ *			}
+ *		});
+ *
+ *
+ *	Define a subclass with a constructor, calling the overridden function
+ *
+ *  __super here is a reference to the Vehicle.init() function. It can appear anywhere in the arguments list.
+ *	
+ *  Change '__super' to be a different variable name in modules.settings.superclassInjector
  *
  *		var Car = Objects.Class(Vehicle, {
  *			init: function(__super, manufacturer, model) {
@@ -55,7 +66,8 @@
  *		});
  *
  *
- * 	Mixins:
+ *
+ * 	Inheritance + mixins:
  *
  * 		var Trailer = Objects.Class(Vehicle, Car, {});
  *
