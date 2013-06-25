@@ -1,12 +1,6 @@
-jsclass
-=======
-
-Class-based inheritance for JavaScript
-
-
 @description Class
 
-A class based inheritance implementation in Javascript.
+A class based OO inheritance pattern implementation in Javascript.
 Exports a module which works in AMD, NodeJS and CommonJS
 
 Useage
@@ -17,7 +11,7 @@ Modify the class variable to add functions.
 
 Define a class (type):
 
-	var Vehicle = Objects.Class({});
+	  var Vehicle = Objects.Class({});
 
 
 Instanciation:
@@ -44,23 +38,34 @@ Define a subclass:
 	var Car = Objects.Class(Vehicle, {});
 
 
-Define a subclass with a constructor, calling the overridden superclass constructor:
-Note:  __super here is a reference to the Vehicle.init() function.
-Change __super to be something different in the modules.settings.superclassInjector.
+Define a subclass with a constructor
 
 __super can be positioned anywhere in the arguments list.
 
 	var Car = Objects.Class(Vehicle, {
-		init: function(__super, manufacturer, model) {
+		init: function(manufacturer, model) {
 			this.model = model;
-
-			// call the superclass constructor, passing in the parameter.
-			__super.init(manufacturer);
 		}
 	});
 
 
-Mixins:
+Define a subclass with a constructor, calling the overridden function
 
-	var Trailer = Objects.Class(Vehicle, Car, {});
+ __super here is a reference to the Vehicle.init() function. It can appear anywhere in the arguments list.
+  
+ Change '__super' to be a different variable name in modules.settings.superclassInjector
+
+	  var Car = Objects.Class(Vehicle, {
+		  init: function(__super, manufacturer, model) {
+			  this.model = model;
+
+			  // call the superclass constructor, passing in the parameter.
+			  __super.init(manufacturer);
+		  }
+	  });
+
+
+  Inheritance + mixins:
+
+	  var Trailer = Objects.Class(Vehicle, Car, {});
 
